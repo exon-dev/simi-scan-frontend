@@ -9,15 +9,23 @@ import {
 	Button,
 	Image,
 } from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, CameraType, useCameraPermissions } from "expo-camera";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
-function CaptureSignature() {
+import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import LoadingDots from "@/components/extras/loading";
+
+interface CaptureSignatureProps {
+	onImageCaptured: (uri: string) => void;
+}
+
+function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 	const [facing, setFacing] = useState<CameraType>("back");
 	const [permission, requestPermission] = useCameraPermissions();
-	const [cameraRef, setCameraRef] = useState(null);
+	const [cameraRef, setCameraRef] = useState<typeof Camera | null>(null);
 
 	if (!permission) {
 		return <View />;
@@ -39,8 +47,8 @@ function CaptureSignature() {
 
 	const captureImage = async () => {
 		if (cameraRef) {
-			// const { uri } = await cameraRef.takePictureAsync();
-			// onImageCaptured(uri);
+			const { uri } = await cameraRef.takePictureAsync();
+			onImageCaptured(uri); // Pass the captured image URI to the parent
 		}
 	};
 
@@ -53,7 +61,7 @@ function CaptureSignature() {
 			<Camera
 				style={styles.camera}
 				type={facing}
-				ref={(ref: SetStateAction<null>) => setCameraRef(ref)}>
+				ref={(ref) => setCameraRef(ref)}>
 				<View style={styles.buttonContainer}>
 					<TouchableOpacity
 						style={styles.button}
@@ -88,9 +96,23 @@ function InputComponent() {
 
 export default function InfoScreen() {
 	const [imageUri, setImageUri] = useState<string | null>(null);
+	const [isSaving, setIsSaving] = useState(false);
+	const [isCapturing, setIsCapturing] = useState(false); // Track whether to show the camera
+	const router = useRouter();
+
+	const handleSaving = () => {
+		setIsSaving(true);
+
+		// After 3 seconds, navigate to "/analyze"
+		setTimeout(() => {
+			setIsSaving(false);
+			router.push("/analyze"); // Use `router.push` for navigation
+		}, 3000);
+	};
 
 	const handleImageCaptured = (uri: string) => {
 		setImageUri(uri);
+		setIsCapturing(false); // Hide the camera after capturing
 	};
 
 	const handleUploadImage = async () => {
@@ -102,10 +124,9 @@ export default function InfoScreen() {
 		});
 
 		if (!result.canceled) {
-			// setImageUri(result);
+			setImageUri(result.uri); // Set the image URI
 		}
 	};
-
 	return (
 		<View style={styles.container}>
 			<View style={styles.backButtonContainer}>
@@ -132,17 +153,36 @@ export default function InfoScreen() {
 					<Text style={styles.inputTitle}>Author</Text>
 					<InputComponent />
 				</View>
+
+				{/* Original Signature upload =================================== */}
 				<View style={styles.distinct}>
 					<Text style={styles.inputTitle}>Original Signature</Text>
-					{/* <CaptureSignature onImageCaptured={handleImageCaptured} /> */}
-
-					<View style={styles.buttonContainer}>
-						<TouchableOpacity
-							style={styles.button}
-							onPress={handleUploadImage}>
-							<Text style={styles.buttonText}>Upload Image</Text>
-						</TouchableOpacity>
-					</View>
+					{isCapturing ? (
+						<CaptureSignature onImageCaptured={handleImageCaptured} />
+					) : (
+						<View style={styles.buttonContainer}>
+							<TouchableOpacity
+								style={styles.button}
+								onPress={() => setIsCapturing(true)}>
+								<SimpleLineIcons
+									name='camera'
+									size={20}
+									color='#9E9E9E'
+								/>
+								<Text style={styles.buttonText}>Take a photo</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={styles.button}
+								onPress={handleUploadImage}>
+								<FontAwesome5
+									name='file-image'
+									size={20}
+									color='#9E9E9E'
+								/>
+								<Text style={styles.buttonText}>Upload Signature</Text>
+							</TouchableOpacity>
+						</View>
+					)}
 					{imageUri && (
 						<Image
 							source={{ uri: imageUri }}
@@ -150,6 +190,54 @@ export default function InfoScreen() {
 						/>
 					)}
 				</View>
+				{/* End of original signature */}
+
+				{/* Reference/Scanned Signature Upload ======================== */}
+				<View style={styles.distinct}>
+					<Text style={styles.inputTitle}>Scanned Signature</Text>
+					{isCapturing ? (
+						<CaptureSignature onImageCaptured={handleImageCaptured} />
+					) : (
+						<View style={styles.buttonContainer}>
+							<TouchableOpacity
+								style={styles.button}
+								onPress={() => setIsCapturing(true)}>
+								<SimpleLineIcons
+									name='camera'
+									size={20}
+									color='#9E9E9E'
+								/>
+								<Text style={styles.buttonText}>Take a photo</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={styles.button}
+								onPress={handleUploadImage}>
+								<FontAwesome5
+									name='file-image'
+									size={20}
+									color='#9E9E9E'
+								/>
+								<Text style={styles.buttonText}>Upload Signature</Text>
+							</TouchableOpacity>
+						</View>
+					)}
+					{imageUri && (
+						<Image
+							source={{ uri: imageUri }}
+							style={styles.imagePreview}
+						/>
+					)}
+				</View>
+				{/* End of scanned signature upload ================== */}
+				<TouchableOpacity
+					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+					onPress={handleSaving}
+					disabled={isSaving}>
+					<Text style={styles.saveButtonText}>
+						{isSaving ? "Saving" : "Save & Proceed"}
+					</Text>
+					{isSaving && <LoadingDots />}
+				</TouchableOpacity>
 			</View>
 		</View>
 	);
@@ -222,10 +310,17 @@ const styles = StyleSheet.create({
 	buttonContainer: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		margin: 20,
+		gap: 10,
 	},
 	button: {
-		backgroundColor: "#006FFD",
+		flex: 1,
+		flexDirection: "row",
+		justifyContent: "center",
+		alignItems: "center",
+		gap: 15,
+		backgroundColor: "#E7E7E7",
+		borderColor: "#B9B9B9",
+		borderWidth: 1,
 		borderRadius: 10,
 		paddingVertical: 10,
 		paddingHorizontal: 20,
@@ -235,13 +330,39 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	buttonText: {
-		color: "#FFF",
-		fontSize: 16,
+		color: "#9E9E9E",
+		fontSize: 15,
+		fontFamily: "Poppins",
 	},
 	imagePreview: {
 		width: 100,
 		height: 100,
 		marginTop: 20,
 		resizeMode: "cover",
+	},
+	saveButton: {
+		backgroundColor: "#006FFD",
+		borderRadius: 12,
+		paddingVertical: 15,
+		paddingHorizontal: 20,
+		width: "100%",
+		flexDirection: "row",
+		justifyContent: "center",
+		alignItems: "center",
+		gap: 10,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 4,
+		elevation: 3,
+		marginTop: 20,
+	},
+	saveButtonDisabled: {
+		backgroundColor: "#59A1FC",
+	},
+	saveButtonText: {
+		color: "white",
+		textAlign: "center",
+		fontSize: 16,
 	},
 });
