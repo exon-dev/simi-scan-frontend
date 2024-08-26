@@ -4,8 +4,6 @@ import {
 	Text,
 	TouchableOpacity,
 	TextInput,
-	StyleSheet,
-	Alert,
 	Button,
 	Image,
 } from "react-native";
@@ -33,8 +31,8 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 
 	if (!permission.granted) {
 		return (
-			<View style={styles.cameraContainer}>
-				<Text style={styles.message}>
+			<View className='flex-1 justify-center items-center p-5'>
+				<Text className='text-center mb-2'>
 					We need your permission to show the camera
 				</Text>
 				<Button
@@ -47,8 +45,9 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 
 	const captureImage = async () => {
 		if (cameraRef) {
-			const { uri } = await cameraRef.takePictureAsync();
-			onImageCaptured(uri); // Pass the captured image URI to the parent
+			const { uri } = await cameraRef.getCameraPermissionsAsync();
+
+			requestPermission(uri);
 		}
 	};
 
@@ -57,21 +56,21 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 	}
 
 	return (
-		<View style={styles.cameraContainer}>
+		<View className='flex-1 justify-center'>
 			<Camera
-				style={styles.camera}
+				style={{ flex: 1 }}
 				type={facing}
 				ref={(ref) => setCameraRef(ref)}>
-				<View style={styles.buttonContainer}>
+				<View className='flex-row justify-between gap-2 p-4'>
 					<TouchableOpacity
-						style={styles.button}
+						className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
 						onPress={toggleCameraFacing}>
-						<Text style={styles.text}>Flip Camera</Text>
+						<Text className='text-white text-lg'>Flip Camera</Text>
 					</TouchableOpacity>
 					<TouchableOpacity
-						style={styles.button}
+						className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
 						onPress={captureImage}>
-						<Text style={styles.text}>Capture</Text>
+						<Text className='text-white text-lg'>Capture</Text>
 					</TouchableOpacity>
 				</View>
 			</Camera>
@@ -85,7 +84,9 @@ function InputComponent() {
 	return (
 		<View>
 			<TextInput
-				style={[styles.inputBox, isFocused && styles.inputBoxFocused]}
+				className={`border rounded-lg px-3 py-4 w-full ${
+					isFocused ? "border-blue-600 border-2" : "border-gray-300"
+				}`}
 				onFocus={() => setIsFocused(true)}
 				onBlur={() => setIsFocused(false)}
 				placeholder='Type here...'
@@ -127,9 +128,10 @@ export default function InfoScreen() {
 			setImageUri(result.uri); // Set the image URI
 		}
 	};
+
 	return (
-		<View style={styles.container}>
-			<View style={styles.backButtonContainer}>
+		<View className='bg-white flex-1 p-8'>
+			<View className='mb-2'>
 				<Link href='/menu'>
 					<MaterialIcons
 						name='arrow-back-ios'
@@ -138,102 +140,110 @@ export default function InfoScreen() {
 					/>
 				</Link>
 			</View>
-			<Text style={styles.title}>Signature Information</Text>
-			<Text style={styles.desc}>
+			<Text className='text-2xl font-semibold pt-4 pb-2'>
+				Signature Information
+			</Text>
+			<Text className='text-lg text-gray-500 mb-5'>
 				Provide basic information about the signature
 			</Text>
 
 			{/* Form */}
-			<View style={styles.form}>
-				<View style={styles.distinct}>
-					<Text style={styles.inputTitle}>Title</Text>
+			<View className='flex-1 space-y-8 mt-2'>
+				<View className='space-y-1'>
+					<Text className='text-lg font-semibold text-gray-800'>Title</Text>
 					<InputComponent />
 				</View>
-				<View style={styles.distinct}>
-					<Text style={styles.inputTitle}>Author</Text>
+				<View className='space-y-1'>
+					<Text className='text-lg font-semibold text-gray-800'>Author</Text>
 					<InputComponent />
 				</View>
 
 				{/* Original Signature upload =================================== */}
-				<View style={styles.distinct}>
-					<Text style={styles.inputTitle}>Original Signature</Text>
+				<View className='space-y-1'>
+					<Text className='text-lg font-semibold text-gray-800'>
+						Original Signature
+					</Text>
 					{isCapturing ? (
 						<CaptureSignature onImageCaptured={handleImageCaptured} />
 					) : (
-						<View style={styles.buttonContainer}>
+						<View className='flex-row justify-between gap-2'>
 							<TouchableOpacity
-								style={styles.button}
+								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
 								onPress={() => setIsCapturing(true)}>
 								<SimpleLineIcons
 									name='camera'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text style={styles.buttonText}>Take a photo</Text>
+								<Text className='text-gray-600 ml-2'>Take a photo</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								style={styles.button}
+								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
 								onPress={handleUploadImage}>
 								<FontAwesome5
 									name='file-image'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text style={styles.buttonText}>Upload Signature</Text>
+								<Text className='text-gray-600 ml-2'>Upload Signature</Text>
 							</TouchableOpacity>
 						</View>
 					)}
 					{imageUri && (
 						<Image
 							source={{ uri: imageUri }}
-							style={styles.imagePreview}
+							className='w-24 h-24 mt-5 object-cover'
 						/>
 					)}
 				</View>
 				{/* End of original signature */}
 
 				{/* Reference/Scanned Signature Upload ======================== */}
-				<View style={styles.distinct}>
-					<Text style={styles.inputTitle}>Scanned Signature</Text>
+				<View className='space-y-1'>
+					<Text className='text-lg font-semibold text-gray-800'>
+						Scanned Signature
+					</Text>
 					{isCapturing ? (
 						<CaptureSignature onImageCaptured={handleImageCaptured} />
 					) : (
-						<View style={styles.buttonContainer}>
+						<View className='flex-row justify-between gap-2'>
 							<TouchableOpacity
-								style={styles.button}
+								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
 								onPress={() => setIsCapturing(true)}>
 								<SimpleLineIcons
 									name='camera'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text style={styles.buttonText}>Take a photo</Text>
+								<Text className='text-gray-600 ml-2'>Take a photo</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								style={styles.button}
+								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
 								onPress={handleUploadImage}>
 								<FontAwesome5
 									name='file-image'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text style={styles.buttonText}>Upload Signature</Text>
+								<Text className='text-gray-600 ml-2'>Upload Signature</Text>
 							</TouchableOpacity>
 						</View>
 					)}
 					{imageUri && (
 						<Image
 							source={{ uri: imageUri }}
-							style={styles.imagePreview}
+							className='w-24 h-24 mt-5 object-cover'
 						/>
 					)}
 				</View>
 				{/* End of scanned signature upload ================== */}
 				<TouchableOpacity
-					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+					className={`w-full flex-row justify-center items-center gap-2 pt-2 pb-4 px-5 rounded-lg ${
+						isSaving ? "bg-blue-400" : "bg-blue-600"
+					} shadow-lg mt-5`}
 					onPress={handleSaving}
 					disabled={isSaving}>
-					<Text style={styles.saveButtonText}>
+					<Text className='text-white text-lg'>
 						{isSaving ? "Saving" : "Save & Proceed"}
 					</Text>
 					{isSaving && <LoadingDots />}
@@ -242,127 +252,3 @@ export default function InfoScreen() {
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		backgroundColor: "#FFF",
-		flex: 1,
-		flexDirection: "column",
-		justifyContent: "flex-start",
-		alignItems: "flex-start",
-		paddingVertical: 30,
-		paddingHorizontal: 20,
-	},
-	backButtonContainer: {
-		marginVertical: 5,
-	},
-	title: {
-		fontSize: 20,
-		fontFamily: "PoppinsLarge",
-		paddingTop: 15,
-		paddingBottom: 5,
-	},
-	desc: {
-		fontSize: 15,
-		fontFamily: "PoppinsMedium",
-		color: "#71727A",
-		marginBottom: 20,
-	},
-	form: {
-		flex: 1,
-		flexDirection: "column",
-		gap: 30,
-		width: "100%",
-		marginVertical: 10,
-	},
-	distinct: {
-		flexDirection: "column",
-		gap: 6,
-	},
-	inputTitle: {
-		fontFamily: "PoppinsLarge",
-		color: "#2F3036",
-		fontSize: 15,
-	},
-	inputBox: {
-		borderWidth: 1,
-		borderColor: "#C5C6CC",
-		borderRadius: 10,
-		paddingHorizontal: 10,
-		paddingVertical: 15,
-		width: "100%",
-	},
-	inputBoxFocused: {
-		borderColor: "#006FFD",
-		borderWidth: 2,
-	},
-	cameraContainer: {
-		flex: 1,
-		justifyContent: "center",
-	},
-	message: {
-		textAlign: "center",
-		paddingBottom: 10,
-	},
-	camera: {
-		flex: 1,
-	},
-	buttonContainer: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		gap: 10,
-	},
-	button: {
-		flex: 1,
-		flexDirection: "row",
-		justifyContent: "center",
-		alignItems: "center",
-		gap: 15,
-		backgroundColor: "#E7E7E7",
-		borderColor: "#B9B9B9",
-		borderWidth: 1,
-		borderRadius: 10,
-		paddingVertical: 10,
-		paddingHorizontal: 20,
-	},
-	text: {
-		color: "white",
-		fontSize: 16,
-	},
-	buttonText: {
-		color: "#9E9E9E",
-		fontSize: 15,
-		fontFamily: "Poppins",
-	},
-	imagePreview: {
-		width: 100,
-		height: 100,
-		marginTop: 20,
-		resizeMode: "cover",
-	},
-	saveButton: {
-		backgroundColor: "#006FFD",
-		borderRadius: 12,
-		paddingVertical: 15,
-		paddingHorizontal: 20,
-		width: "100%",
-		flexDirection: "row",
-		justifyContent: "center",
-		alignItems: "center",
-		gap: 10,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.2,
-		shadowRadius: 4,
-		elevation: 3,
-		marginTop: 20,
-	},
-	saveButtonDisabled: {
-		backgroundColor: "#59A1FC",
-	},
-	saveButtonText: {
-		color: "white",
-		textAlign: "center",
-		fontSize: 16,
-	},
-});

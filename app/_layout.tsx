@@ -38,14 +38,17 @@ export default function RootLayout() {
 		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 			<Stack>
 				<Stack.Screen
-					name='analyze'
+					name='menu'
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name='analyze/[id]'
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen
 					name='info'
 					options={{ headerShown: false }}
 				/>
-				<Stack.Screen name='+not-found' />
 			</Stack>
 		</ThemeProvider>
 	);
