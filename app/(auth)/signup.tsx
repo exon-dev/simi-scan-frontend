@@ -6,6 +6,7 @@ import {
 } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { CheckBox } from "react-native-elements";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const Signup = () => {
@@ -14,7 +15,9 @@ const Signup = () => {
 	const [name, setName] = React.useState("");
 	const [email, setEmail] = React.useState("");
 	const [password, setPassword] = React.useState("");
+	const [isChecked, setIsChecked] = React.useState(false);
 	const [confirmPassword, setConfirmPassword] = React.useState("");
+
 	const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
 	const handleRegister = () => {
@@ -38,7 +41,7 @@ const Signup = () => {
 					<TextInput
 						style={styles.input}
 						placeholder="Name"
-						value={email}
+						value={name}
 						onChangeText={setName}
 						autoCapitalize="none"
 					/>
@@ -103,6 +106,20 @@ const Signup = () => {
 						Already have an account?{" "}
 						<Text style={styles.toLoginLink}>Login</Text>
 					</Text>
+
+					<View style={styles.checkboxContainer}>
+						<CheckBox
+							// title="I agree to the Terms and Conditions"
+							checked={isChecked}
+							onPress={() => setIsChecked(!isChecked)}
+							containerStyle={styles.checkbox}
+						/>
+						<Text style={styles.checkboxText}>
+							I've read and agree to the{" "}
+							<Text style={styles.terms}>Terms and {"\n"} Conditions</Text> and{" "}
+							<Text style={styles.terms}>Privacy Policy</Text>
+						</Text>
+					</View>
 				</View>
 			</SafeAreaView>
 		</GestureHandlerRootView>
@@ -153,7 +170,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderRadius: 5,
 		paddingHorizontal: 10,
-		marginBottom: 20,
+		marginVertical: 15,
 		display: "flex",
 	},
 
@@ -194,6 +211,7 @@ const styles = StyleSheet.create({
 		borderRadius: 5,
 		paddingHorizontal: 10,
 		position: "relative",
+		marginVertical: 15,
 	},
 
 	iconContainer: {
@@ -202,5 +220,23 @@ const styles = StyleSheet.create({
 	},
 	icon: {
 		padding: 10,
+	},
+
+	checkboxContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "flex-start",
+		marginTop: 25,
+	},
+	checkbox: {
+		borderWidth: 0,
+	},
+
+	checkboxText: {
+		fontSize: 15,
+	},
+	terms: {
+		color: "#007AFF",
+		fontWeight: "bold",
 	},
 });
