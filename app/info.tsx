@@ -10,11 +10,11 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Camera, CameraType, useCameraPermissions } from "expo-camera";
 import { Link, useRouter } from "expo-router";
-
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import LoadingDots from "@/components/extras/loading";
+import React from "react";
 
 interface CaptureSignatureProps {
 	onImageCaptured: (uri: string) => void;
@@ -31,8 +31,14 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 
 	if (!permission.granted) {
 		return (
-			<View className='flex-1 justify-center items-center p-5'>
-				<Text className='text-center mb-2'>
+			<View
+				style={{
+					flex: 1,
+					justifyContent: "center",
+					alignItems: "center",
+					padding: 20,
+				}}>
+				<Text style={{ textAlign: "center", marginBottom: 10 }}>
 					We need your permission to show the camera
 				</Text>
 				<Button
@@ -45,9 +51,8 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 
 	const captureImage = async () => {
 		if (cameraRef) {
-			const { uri } = await cameraRef.getCameraPermissionsAsync();
-
-			requestPermission(uri);
+			const { uri } = await cameraRef.takePictureAsync();
+			onImageCaptured(uri);
 		}
 	};
 
@@ -56,21 +61,38 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 	}
 
 	return (
-		<View className='flex-1 justify-center'>
+		<View style={{ flex: 1, justifyContent: "center" }}>
 			<Camera
 				style={{ flex: 1 }}
 				type={facing}
 				ref={(ref) => setCameraRef(ref)}>
-				<View className='flex-row justify-between gap-2 p-4'>
+				<View
+					style={{
+						flexDirection: "row",
+						justifyContent: "space-between",
+						padding: 16,
+					}}>
 					<TouchableOpacity
-						className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
+						style={{
+							flex: 1,
+							alignItems: "center",
+							padding: 10,
+							backgroundColor: "#ccc",
+							borderRadius: 10,
+						}}
 						onPress={toggleCameraFacing}>
-						<Text className='text-white text-lg'>Flip Camera</Text>
+						<Text style={{ color: "white", fontSize: 18 }}>Flip Camera</Text>
 					</TouchableOpacity>
 					<TouchableOpacity
-						className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
+						style={{
+							flex: 1,
+							alignItems: "center",
+							padding: 10,
+							backgroundColor: "#ccc",
+							borderRadius: 10,
+						}}
 						onPress={captureImage}>
-						<Text className='text-white text-lg'>Capture</Text>
+						<Text style={{ color: "white", fontSize: 18 }}>Capture</Text>
 					</TouchableOpacity>
 				</View>
 			</Camera>
@@ -84,9 +106,13 @@ function InputComponent() {
 	return (
 		<View>
 			<TextInput
-				className={`border rounded-lg px-3 py-4 w-full ${
-					isFocused ? "border-blue-600 border-2" : "border-gray-300"
-				}`}
+				style={{
+					borderWidth: isFocused ? 2 : 1,
+					borderColor: isFocused ? "#1E90FF" : "#ccc",
+					borderRadius: 10,
+					padding: 10,
+					width: "100%",
+				}}
 				onFocus={() => setIsFocused(true)}
 				onBlur={() => setIsFocused(false)}
 				placeholder='Type here...'
@@ -98,22 +124,20 @@ function InputComponent() {
 export default function InfoScreen() {
 	const [imageUri, setImageUri] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
-	const [isCapturing, setIsCapturing] = useState(false); // Track whether to show the camera
+	const [isCapturing, setIsCapturing] = useState(false);
 	const router = useRouter();
 
 	const handleSaving = () => {
 		setIsSaving(true);
-
-		// After 3 seconds, navigate to "/analyze"
 		setTimeout(() => {
 			setIsSaving(false);
-			router.push("/analyze"); // Use `router.push` for navigation
+			router.push("/analyze");
 		}, 3000);
 	};
 
 	const handleImageCaptured = (uri: string) => {
 		setImageUri(uri);
-		setIsCapturing(false); // Hide the camera after capturing
+		setIsCapturing(false);
 	};
 
 	const handleUploadImage = async () => {
@@ -125,13 +149,13 @@ export default function InfoScreen() {
 		});
 
 		if (!result.canceled) {
-			setImageUri(result.uri); // Set the image URI
+			setImageUri(result.assets[0].uri);
 		}
 	};
 
 	return (
-		<View className='bg-white flex-1 p-8'>
-			<View className='mb-2'>
+		<View style={{ flex: 1, backgroundColor: "white", padding: 20 }}>
+			<View style={{ marginBottom: 10 }}>
 				<Link href='/menu'>
 					<MaterialIcons
 						name='arrow-back-ios'
@@ -140,113 +164,165 @@ export default function InfoScreen() {
 					/>
 				</Link>
 			</View>
-			<Text className='text-2xl font-semibold pt-4 pb-2'>
+			<Text
+				style={{
+					fontSize: 24,
+					fontWeight: "600",
+					paddingTop: 10,
+					paddingBottom: 5,
+				}}>
 				Signature Information
 			</Text>
-			<Text className='text-lg text-gray-500 mb-5'>
+			<Text style={{ fontSize: 18, color: "#6e6e6e", marginBottom: 20 }}>
 				Provide basic information about the signature
 			</Text>
 
 			{/* Form */}
-			<View className='flex-1 space-y-8 mt-2'>
-				<View className='space-y-1'>
-					<Text className='text-lg font-semibold text-gray-800'>Title</Text>
+			<View style={{ flex: 1, marginTop: 10, gap: 20 }}>
+				<View style={{ gap: 5 }}>
+					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
+						Title
+					</Text>
 					<InputComponent />
 				</View>
-				<View className='space-y-1'>
-					<Text className='text-lg font-semibold text-gray-800'>Author</Text>
+				<View style={{ gap: 5 }}>
+					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
+						Author
+					</Text>
 					<InputComponent />
 				</View>
 
-				{/* Original Signature upload =================================== */}
-				<View className='space-y-1'>
-					<Text className='text-lg font-semibold text-gray-800'>
+				{/* Original Signature upload */}
+				<View style={{ gap: 5 }}>
+					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
 						Original Signature
 					</Text>
 					{isCapturing ? (
 						<CaptureSignature onImageCaptured={handleImageCaptured} />
 					) : (
-						<View className='flex-row justify-between gap-2'>
+						<View style={{ flexDirection: "row", justifyContent: "space-between" }}>
 							<TouchableOpacity
-								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
+								style={{
+									flex: 1,
+									flexDirection: "row",
+									alignItems: "center",
+									justifyContent: "center",
+									backgroundColor: "#ccc",
+									borderRadius: 10,
+									padding: 10,
+								}}
 								onPress={() => setIsCapturing(true)}>
 								<SimpleLineIcons
 									name='camera'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text className='text-gray-600 ml-2'>Take a photo</Text>
+								<Text style={{ color: "#666", marginLeft: 5 }}>Take a photo</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
+								style={{
+									flex: 1,
+									flexDirection: "row",
+									alignItems: "center",
+									justifyContent: "center",
+									backgroundColor: "#ccc",
+									borderRadius: 10,
+									padding: 10,
+								}}
 								onPress={handleUploadImage}>
 								<FontAwesome5
 									name='file-image'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text className='text-gray-600 ml-2'>Upload Signature</Text>
+								<Text style={{ color: "#666", marginLeft: 5 }}>Upload Signature</Text>
 							</TouchableOpacity>
 						</View>
 					)}
 					{imageUri && (
 						<Image
 							source={{ uri: imageUri }}
-							className='w-24 h-24 mt-5 object-cover'
+							style={{ width: 96, height: 96, marginTop: 10, resizeMode: "cover" }}
 						/>
 					)}
 				</View>
-				{/* End of original signature */}
 
-				{/* Reference/Scanned Signature Upload ======================== */}
-				<View className='space-y-1'>
-					<Text className='text-lg font-semibold text-gray-800'>
+				{/* Reference/Scanned Signature Upload */}
+				<View style={{ gap: 5 }}>
+					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
 						Scanned Signature
 					</Text>
 					{isCapturing ? (
 						<CaptureSignature onImageCaptured={handleImageCaptured} />
 					) : (
-						<View className='flex-row justify-between gap-2'>
+						<View style={{ flexDirection: "row", justifyContent: "space-between" }}>
 							<TouchableOpacity
-								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
+								style={{
+									flex: 1,
+									flexDirection: "row",
+									alignItems: "center",
+									justifyContent: "center",
+									backgroundColor: "#ccc",
+									borderRadius: 10,
+									padding: 10,
+								}}
 								onPress={() => setIsCapturing(true)}>
 								<SimpleLineIcons
 									name='camera'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text className='text-gray-600 ml-2'>Take a photo</Text>
+								<Text style={{ color: "#666", marginLeft: 5 }}>Take a photo</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								className='flex-1 flex-row justify-center items-center bg-gray-200 border border-gray-400 rounded-lg py-2 px-4'
+								style={{
+									flex: 1,
+									flexDirection: "row",
+									alignItems: "center",
+									justifyContent: "center",
+									backgroundColor: "#ccc",
+									borderRadius: 10,
+									padding: 10,
+								}}
 								onPress={handleUploadImage}>
 								<FontAwesome5
 									name='file-image'
 									size={20}
 									color='#9E9E9E'
 								/>
-								<Text className='text-gray-600 ml-2'>Upload Signature</Text>
+								<Text style={{ color: "#666", marginLeft: 5 }}>Upload Signature</Text>
 							</TouchableOpacity>
 						</View>
 					)}
 					{imageUri && (
 						<Image
 							source={{ uri: imageUri }}
-							className='w-24 h-24 mt-5 object-cover'
+							style={{ width: 96, height: 96, marginTop: 10, resizeMode: "cover" }}
 						/>
 					)}
 				</View>
-				{/* End of scanned signature upload ================== */}
+
 				<TouchableOpacity
-					className={`w-full flex-row justify-center items-center gap-2 pt-2 pb-4 px-5 rounded-lg ${
-						isSaving ? "bg-blue-400" : "bg-blue-600"
-					} shadow-lg mt-5`}
-					onPress={handleSaving}
-					disabled={isSaving}>
-					<Text className='text-white text-lg'>
-						{isSaving ? "Saving" : "Save & Proceed"}
-					</Text>
-					{isSaving && <LoadingDots />}
+					style={{
+						width: "100%",
+						backgroundColor: "#0A74DA",
+						padding: 15,
+						borderRadius: 10,
+						alignItems: "center",
+						justifyContent: "center",
+						flexDirection: "row",
+						gap: 10,
+						marginTop: 20,
+					}}
+					disabled={isSaving}
+					onPress={handleSaving}>
+					{isSaving ? (
+						<LoadingDots />
+					) : (
+						<Text style={{ color: "white", fontWeight: "600", fontSize: 18 }}>
+							Analyze Signature
+						</Text>
+					)}
 				</TouchableOpacity>
 			</View>
 		</View>
