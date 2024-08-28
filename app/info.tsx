@@ -17,6 +17,7 @@ import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import LoadingDots from "@/components/extras/loading";
+import React from "react";
 
 interface CaptureSignatureProps {
 	onImageCaptured: (uri: string) => void;
@@ -37,10 +38,7 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 				<Text style={styles.message}>
 					We need your permission to show the camera
 				</Text>
-				<Button
-					onPress={requestPermission}
-					title='Grant Permission'
-				/>
+				<Button onPress={requestPermission} title="Grant Permission" />
 			</View>
 		);
 	}
@@ -61,16 +59,13 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 			<Camera
 				style={styles.camera}
 				type={facing}
-				ref={(ref) => setCameraRef(ref)}>
+				ref={(ref) => setCameraRef(ref)}
+			>
 				<View style={styles.buttonContainer}>
-					<TouchableOpacity
-						style={styles.button}
-						onPress={toggleCameraFacing}>
+					<TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
 						<Text style={styles.text}>Flip Camera</Text>
 					</TouchableOpacity>
-					<TouchableOpacity
-						style={styles.button}
-						onPress={captureImage}>
+					<TouchableOpacity style={styles.button} onPress={captureImage}>
 						<Text style={styles.text}>Capture</Text>
 					</TouchableOpacity>
 				</View>
@@ -88,7 +83,7 @@ function InputComponent() {
 				style={[styles.inputBox, isFocused && styles.inputBoxFocused]}
 				onFocus={() => setIsFocused(true)}
 				onBlur={() => setIsFocused(false)}
-				placeholder='Type here...'
+				placeholder="Type here..."
 			/>
 		</View>
 	);
@@ -130,12 +125,8 @@ export default function InfoScreen() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.backButtonContainer}>
-				<Link href='/menu'>
-					<MaterialIcons
-						name='arrow-back-ios'
-						size={30}
-						color='black'
-					/>
+				<Link href="/menu">
+					<MaterialIcons name="arrow-back-ios" size={30} color="black" />
 				</Link>
 			</View>
 			<Text style={styles.title}>Signature Information</Text>
@@ -163,31 +154,22 @@ export default function InfoScreen() {
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity
 								style={styles.button}
-								onPress={() => setIsCapturing(true)}>
-								<SimpleLineIcons
-									name='camera'
-									size={20}
-									color='#9E9E9E'
-								/>
+								onPress={() => setIsCapturing(true)}
+							>
+								<SimpleLineIcons name="camera" size={20} color="#9E9E9E" />
 								<Text style={styles.buttonText}>Take a photo</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={styles.button}
-								onPress={handleUploadImage}>
-								<FontAwesome5
-									name='file-image'
-									size={20}
-									color='#9E9E9E'
-								/>
+								onPress={handleUploadImage}
+							>
+								<FontAwesome5 name="file-image" size={20} color="#9E9E9E" />
 								<Text style={styles.buttonText}>Upload Signature</Text>
 							</TouchableOpacity>
 						</View>
 					)}
 					{imageUri && (
-						<Image
-							source={{ uri: imageUri }}
-							style={styles.imagePreview}
-						/>
+						<Image source={{ uri: imageUri }} style={styles.imagePreview} />
 					)}
 				</View>
 				{/* End of original signature */}
@@ -201,38 +183,30 @@ export default function InfoScreen() {
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity
 								style={styles.button}
-								onPress={() => setIsCapturing(true)}>
-								<SimpleLineIcons
-									name='camera'
-									size={20}
-									color='#9E9E9E'
-								/>
+								onPress={() => setIsCapturing(true)}
+							>
+								<SimpleLineIcons name="camera" size={20} color="#9E9E9E" />
 								<Text style={styles.buttonText}>Take a photo</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={styles.button}
-								onPress={handleUploadImage}>
-								<FontAwesome5
-									name='file-image'
-									size={20}
-									color='#9E9E9E'
-								/>
+								onPress={handleUploadImage}
+							>
+								<FontAwesome5 name="file-image" size={20} color="#9E9E9E" />
 								<Text style={styles.buttonText}>Upload Signature</Text>
 							</TouchableOpacity>
 						</View>
 					)}
 					{imageUri && (
-						<Image
-							source={{ uri: imageUri }}
-							style={styles.imagePreview}
-						/>
+						<Image source={{ uri: imageUri }} style={styles.imagePreview} />
 					)}
 				</View>
 				{/* End of scanned signature upload ================== */}
 				<TouchableOpacity
 					style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
 					onPress={handleSaving}
-					disabled={isSaving}>
+					disabled={isSaving}
+				>
 					<Text style={styles.saveButtonText}>
 						{isSaving ? "Saving" : "Save & Proceed"}
 					</Text>
