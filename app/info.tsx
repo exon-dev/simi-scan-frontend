@@ -9,7 +9,7 @@ import {
 	StyleSheet,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import { CameraView, CameraType, FlashMode, CameraMode } from "expo-camera";
 import { useRouter } from "expo-router";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -23,42 +23,56 @@ interface CaptureSignatureProps {
 }
 
 function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
-	const [facing, setFacing] = useState<CameraType>("back");
-	const [permission, requestPermission] = useCameraPermissions();
+	const cameraRef = useRef<CameraView>(null);
+	const [cameraMode, setCameraMode] = useState<CameraMode>("picture");
+	const [cameraFlash, setCameraFlash] = useState<FlashMode>("off");
+	const [cameraFacing, setCameraFacing] = useState<CameraType>("back");
+	const [isRecording, setIsRecording] = useState<boolean>(false);
+	const [picture, setPicture] = useState<string | null>(null);
 
-	if (!permission) {
-		return <View />;
-	}
+	const handleTakePicture = async () => {
+		if (cameraMode === "picture") {
+			const response = await cameraRef.current?.takePictureAsync({});
+			if (response?.uri) {
+				setPicture(response.uri);
+				onImageCaptured(response.uri);
+			}
+		} else if (cameraMode === "video") {
+			if (isRecording) {
+				cameraRef.current?.stopRecording();
+				setIsRecording(false);
+			} else {
+				setIsRecording(true);
+				const response = await cameraRef.current?.recordAsync();
+				if (response?.uri) {
+					// handle video URL if needed
+				}
+			}
+		}
+	};
 
-	console.log(permission.granted);
-
-	if (!permission.granted) {
-		return (
-			<View style={styles.container}>
-				<Text style={styles.message}>
-					We need your permission to show the camera
-				</Text>
-				<Button
-					onPress={requestPermission}
-					title='Grant Permission'
-				/>
-			</View>
-		);
-	}
-
-	function toggleCameraFacing() {
-		setFacing((current) => (current === "back" ? "front" : "back"));
-	}
+	const toggleCameraFacing = () => {
+		setCameraFacing((current) => (current === "back" ? "front" : "back"));
+	};
 
 	return (
-		<View style={styles.container}>
+		<View
+			style={[styles.container, { backgroundColor: "lightgrey" }]}
+			className='relative'>
 			<CameraView
-				style={styles.camera}
-				facing={facing}>
+				ref={cameraRef}
+				style={[styles.camera, { borderColor: "red", borderWidth: 2 }]}
+				facing={cameraFacing}
+				mode={cameraMode}
+				flash={cameraFlash}>
 				<View style={styles.buttonContainer}>
 					<Button
 						title='Flip Camera'
 						onPress={toggleCameraFacing}
+					/>
+					<Button
+						title={cameraMode === "picture" ? "Take Picture" : "Record Video"}
+						onPress={handleTakePicture}
 					/>
 				</View>
 			</CameraView>
@@ -246,18 +260,20 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		justifyContent: "center",
-	},
-	message: {
-		textAlign: "center",
-		paddingBottom: 10,
+		alignItems: "center",
 	},
 	camera: {
 		flex: 1,
+		width: "100%",
+		height: "100%",
 	},
 	buttonContainer: {
-		flex: 1,
+		position: "absolute",
+		bottom: 20,
+		left: 0,
+		right: 0,
 		flexDirection: "row",
-		backgroundColor: "transparent",
-		margin: 64,
+		justifyContent: "center",
+		alignItems: "center",
 	},
 });
