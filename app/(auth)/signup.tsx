@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import {
 	TextInput,
@@ -9,70 +9,126 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { CheckBox } from "react-native-elements";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import supabase from "../../lib/supabase";
+import { Alert } from "react-native";
+import { useUserStore } from "../../store/users";
+import { router } from "expo-router";
+
 const Signup = () => {
-	const router = useRouter();
+	const {
+		name,
+		email,
+		password,
+		confirmPassword,
+		isPasswordVisible,
+		loading,
+		isChecked,
+		setName,
+		setEmail,
+		setPassword,
+		setConfirmPassword,
+		setIsPasswordVisible,
+		setLoading,
+		setIsChecked,
+	} = useUserStore();
 
-	const [name, setName] = React.useState("");
-	const [email, setEmail] = React.useState("");
-	const [password, setPassword] = React.useState("");
-	const [isChecked, setIsChecked] = React.useState(false);
-	const [confirmPassword, setConfirmPassword] = React.useState("");
+	async function signUpWithEmail() {
+		if (!validatePassword(password)) {
+			Alert.alert(
+				"Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number"
+			);
+			return;
+		}
 
-	const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+		if (password !== confirmPassword) {
+			Alert.alert("Passwords do not match!");
+			return;
+		}
 
-	const handleRegister = () => {
-		router.push("/signin");
+		if (!isChecked) {
+			Alert.alert("You must agree to the terms and conditions.");
+			return;
+		}
+
+		setLoading(true);
+
+		const { data, error } = await supabase.auth.signUp({ email, password });
+
+		if (error) {
+			Alert.alert(error.message);
+		} else {
+			const { error } = await supabase.from("users").insert({
+				name,
+				email,
+			});
+			Alert.alert("Please check your inbox for email verification!");
+
+			if (error) {
+				Alert.alert(error.message);
+				return;
+			}
+			localStorage.setItem("is_register", "true");
+			router.push("/(auth)/verification");
+		}
+
+		setLoading(false);
+	}
+
+	const validatePassword = (password: string): boolean => {
+		const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
+		return passwordRegex.test(password);
 	};
 
 	const alreadyHaveAccount = () => {
-		router.push("/signin");
+		//@ts-ignore
+
+		router.push("/(auth)/signin");
 	};
 
-	const togglePasswordVisibility = () => {
+	const passwordVisiblity = () => {
 		setIsPasswordVisible(!isPasswordVisible);
 	};
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<SafeAreaView style={styles.container}>
 				<View style={styles.formContainer}>
-					<Text style={styles.headerText}>Sign up!</Text>
+					<Text style={styles.headerText}>Sign up</Text>
 					<Text style={styles.desc}>Create an Account to get started</Text>
 					<Text style={styles.title}>Name</Text>
 					<TextInput
 						style={styles.input}
-						placeholder="Name"
+						placeholder='Name'
 						value={name}
 						onChangeText={setName}
-						autoCapitalize="none"
+						autoCapitalize='none'
 					/>
 					<Text style={styles.title}>Email Address</Text>
 					<TextInput
 						style={styles.input}
-						placeholder="Email"
+						placeholder='Email'
 						value={email}
 						onChangeText={setEmail}
-						keyboardType="email-address"
-						autoCapitalize="none"
+						keyboardType='email-address'
+						autoCapitalize='none'
 					/>
 					<Text style={styles.title}>Password</Text>
 					<View style={styles.passwordContainer}>
 						<TextInput
 							style={styles.passwordInput}
-							placeholder="Password"
+							placeholder='Password'
 							value={password}
 							onChangeText={setPassword}
 							secureTextEntry={!isPasswordVisible}
 						/>
 						<TouchableOpacity
-							onPress={togglePasswordVisibility}
-							style={styles.iconContainer}
-						>
+							onPress={passwordVisiblity}
+							style={styles.iconContainer}>
 							<MaterialCommunityIcons
 								name={isPasswordVisible ? "eye-off" : "eye"}
 								size={24}
-								position="absolute"
+								position='absolute'
 								right={15}
-								color="#007AFF"
+								color='#007AFF'
 							/>
 						</TouchableOpacity>
 					</View>
@@ -80,31 +136,33 @@ const Signup = () => {
 					<View style={styles.passwordContainer}>
 						<TextInput
 							style={styles.passwordInput}
-							placeholder="Confirm Password"
+							placeholder='Confirm Password'
 							value={confirmPassword}
 							onChangeText={setConfirmPassword}
 							secureTextEntry={!isPasswordVisible}
 						/>
 						<TouchableOpacity
-							onPress={togglePasswordVisibility}
-							style={styles.iconContainer}
-						>
+							onPress={passwordVisiblity}
+							style={styles.iconContainer}>
 							<MaterialCommunityIcons
 								name={isPasswordVisible ? "eye-off" : "eye"}
 								size={24}
-								position="absolute"
+								position='absolute'
 								right={15}
-								color="#007AFF"
+								color='#007AFF'
 							/>
 						</TouchableOpacity>
 					</View>
 
-					<TouchableOpacity style={styles.button} onPress={handleRegister}>
+					<TouchableOpacity
+						style={styles.button}
+						onPress={signUpWithEmail}>
 						<Text style={styles.buttonText}>Sign Up</Text>
 					</TouchableOpacity>
-					<Text style={styles.toLogin} onPress={alreadyHaveAccount}>
-						Already have an account?{" "}
-						<Text style={styles.toLoginLink}>Login</Text>
+					<Text
+						style={styles.toLogin}
+						onPress={alreadyHaveAccount}>
+						Already have an account? <Text style={styles.toLoginLink}>Login</Text>
 					</Text>
 
 					<View style={styles.checkboxContainer}>

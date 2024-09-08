@@ -3,15 +3,10 @@ import React from "react";
 
 const Layout = () => {
 	return (
-		<Stack>
-			<Stack.Screen
-				name='signup'
-				options={{ headerShown: false }}
-			/>
-			<Stack.Screen
-				name='signin'
-				options={{ headerShown: false }}
-			/>
+		<Stack screenOptions={{ headerShown: false }}>
+			<Stack.Screen name='signin' />
+			<Stack.Screen name='signup' />
+			<Stack.Screen name='verification' />
 		</Stack>
 	);
 };
