@@ -39,7 +39,7 @@ const Signin = () => {
 						contentFit="contain"
 					/>
 				</View>
-				<View style={styles.blank}></View>
+
 				<View style={styles.formContainer}>
 					<Text style={styles.headerText}>Welcome!</Text>
 					<TextInput
