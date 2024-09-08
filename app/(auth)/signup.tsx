@@ -5,7 +5,14 @@ import {
 	GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+	View,
+	Text,
+	TouchableOpacity,
+	StyleSheet,
+	KeyboardAvoidingView,
+	Platform,
+} from "react-native";
 import { CheckBox } from "react-native-elements";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -31,98 +38,94 @@ const Signup = () => {
 	const togglePasswordVisibility = () => {
 		setIsPasswordVisible(!isPasswordVisible);
 	};
+
 	return (
-		<GestureHandlerRootView style={{ flex: 1 }}>
-			<SafeAreaView style={styles.container}>
-				<View style={styles.formContainer}>
-					<Text style={styles.headerText}>Sign up!</Text>
-					<Text style={styles.desc}>Create an Account to get started</Text>
-					<Text style={styles.title}>Name</Text>
-					<TextInput
-						style={styles.input}
-						placeholder="Name"
-						value={name}
-						onChangeText={setName}
-						autoCapitalize="none"
-					/>
-					<Text style={styles.title}>Email Address</Text>
-					<TextInput
-						style={styles.input}
-						placeholder="Email"
-						value={email}
-						onChangeText={setEmail}
-						keyboardType="email-address"
-						autoCapitalize="none"
-					/>
-					<Text style={styles.title}>Password</Text>
-					<View style={styles.passwordContainer}>
+		<KeyboardAvoidingView style={{ flex: 1 }} behavior={"padding"}>
+			<GestureHandlerRootView>
+				<SafeAreaView style={styles.container}>
+					<View style={styles.formContainer}>
+						<Text style={styles.headerText}>Sign up!</Text>
+						<Text style={styles.desc}>Create an Account to get started</Text>
+						<Text style={styles.title}>Name</Text>
 						<TextInput
-							style={styles.passwordInput}
-							placeholder="Password"
-							value={password}
-							onChangeText={setPassword}
-							secureTextEntry={!isPasswordVisible}
+							style={styles.input}
+							placeholder="Name"
+							value={name}
+							onChangeText={setName}
+							autoCapitalize="none"
 						/>
-						<TouchableOpacity
-							onPress={togglePasswordVisibility}
-							style={styles.iconContainer}
-						>
-							<MaterialCommunityIcons
-								name={isPasswordVisible ? "eye-off" : "eye"}
-								size={24}
-								position="absolute"
-								right={15}
-								color="#007AFF"
-							/>
-						</TouchableOpacity>
-					</View>
-					<Text style={styles.title}>Confirm Password</Text>
-					<View style={styles.passwordContainer}>
+						<Text style={styles.title}>Email Address</Text>
 						<TextInput
-							style={styles.passwordInput}
-							placeholder="Confirm Password"
-							value={confirmPassword}
-							onChangeText={setConfirmPassword}
-							secureTextEntry={!isPasswordVisible}
+							style={styles.input}
+							placeholder="Email"
+							value={email}
+							onChangeText={setEmail}
+							keyboardType="email-address"
+							autoCapitalize="none"
 						/>
-						<TouchableOpacity
-							onPress={togglePasswordVisibility}
-							style={styles.iconContainer}
-						>
-							<MaterialCommunityIcons
-								name={isPasswordVisible ? "eye-off" : "eye"}
-								size={24}
-								position="absolute"
-								right={15}
-								color="#007AFF"
+						<Text style={styles.title}>Password</Text>
+						<View style={styles.passwordContainer}>
+							<TextInput
+								style={styles.passwordInput}
+								placeholder="Password"
+								value={password}
+								onChangeText={setPassword}
+								secureTextEntry={!isPasswordVisible}
 							/>
+							<TouchableOpacity
+								onPress={togglePasswordVisibility}
+								style={styles.iconContainer}
+							>
+								<MaterialCommunityIcons
+									name={isPasswordVisible ? "eye-off" : "eye"}
+									size={24}
+									color="#007AFF"
+								/>
+							</TouchableOpacity>
+						</View>
+						<Text style={styles.title}>Confirm Password</Text>
+						<View style={styles.passwordContainer}>
+							<TextInput
+								style={styles.passwordInput}
+								placeholder="Confirm Password"
+								value={confirmPassword}
+								onChangeText={setConfirmPassword}
+								secureTextEntry={!isPasswordVisible}
+							/>
+							<TouchableOpacity
+								onPress={togglePasswordVisibility}
+								style={styles.iconContainer}
+							>
+								<MaterialCommunityIcons
+									name={isPasswordVisible ? "eye-off" : "eye"}
+									size={24}
+									color="#007AFF"
+								/>
+							</TouchableOpacity>
+						</View>
+						<TouchableOpacity style={styles.button} onPress={handleRegister}>
+							<Text style={styles.buttonText}>Sign Up</Text>
 						</TouchableOpacity>
-					</View>
-
-					<TouchableOpacity style={styles.button} onPress={handleRegister}>
-						<Text style={styles.buttonText}>Sign Up</Text>
-					</TouchableOpacity>
-					<Text style={styles.toLogin} onPress={alreadyHaveAccount}>
-						Already have an account?{" "}
-						<Text style={styles.toLoginLink}>Login</Text>
-					</Text>
-
-					<View style={styles.checkboxContainer}>
-						<CheckBox
-							// title="I agree to the Terms and Conditions"
-							checked={isChecked}
-							onPress={() => setIsChecked(!isChecked)}
-							containerStyle={styles.checkbox}
-						/>
-						<Text style={styles.checkboxText}>
-							I've read and agree to the{" "}
-							<Text style={styles.terms}>Terms and {"\n"} Conditions</Text> and{" "}
-							<Text style={styles.terms}>Privacy Policy</Text>
+						<Text style={styles.toLogin} onPress={alreadyHaveAccount}>
+							Already have an account?{" "}
+							<Text style={styles.toLoginLink}>Login</Text>
 						</Text>
+						<View style={styles.checkboxContainer}>
+							<CheckBox
+								checked={isChecked}
+								onPress={() => setIsChecked(!isChecked)}
+								containerStyle={styles.checkbox}
+							/>
+							<Text style={styles.checkboxText}>
+								I've read and agree to the{" "}
+								<Text style={styles.terms}>Terms and {"\n"} Conditions</Text>{" "}
+								and <Text style={styles.terms}>Privacy Policy</Text>
+							</Text>
+						</View>
 					</View>
-				</View>
-			</SafeAreaView>
-		</GestureHandlerRootView>
+				</SafeAreaView>
+			</GestureHandlerRootView>
+		</KeyboardAvoidingView>
 	);
 };
 
@@ -136,12 +139,10 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		fontFamily: "Poppins",
 	},
-
 	desc: {
 		fontSize: 15,
 		marginBottom: 20,
 	},
-
 	title: {
 		fontSize: 15,
 		fontWeight: "bold",
@@ -151,19 +152,16 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		fontSize: 20,
 	},
-
 	formContainer: {
 		flex: 1,
 		justifyContent: "center",
 		padding: 20,
 	},
-
 	headerText: {
 		fontSize: 30,
 		fontWeight: "bold",
 		fontFamily: "Poppins",
 	},
-
 	input: {
 		height: 50,
 		borderColor: "#ccc",
@@ -173,7 +171,6 @@ const styles = StyleSheet.create({
 		marginVertical: 15,
 		display: "flex",
 	},
-
 	button: {
 		height: 60,
 		width: "100%",
@@ -183,25 +180,21 @@ const styles = StyleSheet.create({
 		borderRadius: 15,
 		marginVertical: 15,
 	},
-
 	toLogin: {
 		fontSize: 15,
 		textAlign: "center",
 	},
-
 	toLoginLink: {
 		textAlign: "center",
 		color: "blue",
 		fontSize: 15,
 		fontWeight: "bold",
 	},
-
 	passwordContainer: {
 		flexDirection: "row",
 		alignItems: "center",
 		width: "100%",
 	},
-
 	passwordInput: {
 		flex: 1,
 		height: 50,
@@ -213,7 +206,6 @@ const styles = StyleSheet.create({
 		position: "relative",
 		marginVertical: 15,
 	},
-
 	iconContainer: {
 		justifyContent: "center",
 		alignItems: "center",
@@ -221,7 +213,6 @@ const styles = StyleSheet.create({
 	icon: {
 		padding: 10,
 	},
-
 	checkboxContainer: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -231,7 +222,6 @@ const styles = StyleSheet.create({
 	checkbox: {
 		borderWidth: 0,
 	},
-
 	checkboxText: {
 		fontSize: 15,
 	},

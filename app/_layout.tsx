@@ -11,6 +11,8 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import React from "react";
+import { PaperProvider } from "react-native-paper";
+import Alert from "../components/Alerts";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -36,14 +38,15 @@ export default function RootLayout() {
 	}
 
 	return (
-		<ThemeProvider value={colorScheme === "light" ? DarkTheme : DefaultTheme}>
-			<Stack>
-				<Stack.Screen name="index" options={{ headerShown: false }} />
-				<Stack.Screen name="(auth)" options={{ headerShown: false }} />
-				<Stack.Screen name="analyze" options={{ headerShown: false }} />
-				<Stack.Screen name="info" options={{ headerShown: false }} />
-				<Stack.Screen name="+not-found" />
-			</Stack>
-		</ThemeProvider>
+		<PaperProvider>
+			<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+				<Stack screenOptions={{ headerShown: false }}>
+					<Stack.Screen name="index" />
+					<Stack.Screen name="analyze" />
+					<Stack.Screen name="info" />
+					<Stack.Screen name="+not-found" />
+				</Stack>
+			</ThemeProvider>
+		</PaperProvider>
 	);
 }

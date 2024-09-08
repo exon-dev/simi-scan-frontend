@@ -8,7 +8,7 @@ const LandingPage = () => {
 	const router = useRouter();
 
 	const handlePress = () => {
-		router.push("./(auth)/signin");
+		router.push("/auth/signin");
 	};
 
 	return (
