@@ -7,9 +7,61 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import supabase from "@/lib/supabase";
 import { SignatureInfoProps } from "@/types/global";
 import { useSessionStore } from "@/store/session";
+import { Svg, Circle } from 'react-native-svg';
 
 const convertBase64ToImageSource = (base64String: string) => {
 	return `data:image/png;base64,${base64String}`;
+};
+
+
+const  DonutChart = ({ index, threshold }: { index: number; threshold: number }) => {
+	const radius = 80; 
+	const strokeWidth = 15; 
+	const normalizedRadius = radius - strokeWidth / 2;
+	const circumference = normalizedRadius * 2 * Math.PI;
+	const strokeDashoffset = circumference - (index / 100) * circumference;
+
+  const dynamicColor = (index: number, threshold: number): string => {
+    if (index <= 45 && threshold <= 50) return 'red';
+    if (index > 45 && index <= 65 && threshold <= 50) return 'orange';
+    if (index > 45 && index <= 75 && threshold > 50) return 'yellow';
+    if (index > 75 && threshold > 60) return 'green';
+    return 'gray';
+  };
+
+  const chartColor = dynamicColor(index, threshold);
+
+  return (
+			<View className="relative flex items-center justify-center w-[250px] h-[250px]">
+			<Svg height={radius * 2} width={radius * 2}>
+					<Circle
+							stroke="#000"
+							fill="none"
+							cx={radius}
+							cy={radius}
+							r={normalizedRadius}
+							strokeWidth={strokeWidth}
+					/>
+					<Circle
+							stroke={chartColor}
+							fill="none"
+							cx={radius}
+							cy={radius}
+							r={normalizedRadius}
+							strokeWidth={strokeWidth}
+							strokeDasharray={`${circumference} ${circumference}`}
+							strokeDashoffset={strokeDashoffset}
+							strokeLinecap="round"
+					/>
+			</Svg>
+			<View className="absolute inset-0 flex items-center justify-center">
+					<Text className={`text-3xl font-bold text-${chartColor}-500`}>
+							{index}%
+					</Text>
+					<Text className="font-semibold text-xs">Similarity Index</Text>
+			</View>
+	</View>
+  );
 };
 
 const RootLayout = () => {
@@ -59,6 +111,18 @@ const RootLayout = () => {
 				date: result.date
 			})
 
+			const { error } = await supabase.from("results").insert({
+				similarity_index: result.similarity_idx,
+				threshold: result.threshold_val,
+				date_created: result.date,
+				signature_id: id
+			})
+
+			if(error) {
+				console.error(error)
+				return;
+			}
+
 		} catch (err) {
 			//@ts-ignore
 			console.error("Network request failed:", err.message);
@@ -77,6 +141,33 @@ const RootLayout = () => {
 			setIsAnalyzing(false);
 		}
 	};
+
+	const labelIdentifier = (index: number, threshold: number): string => {
+		if (index <= 45 && threshold <= 50) return 'Highly Likely Forged!';
+		if (index > 45 && index <= 65 && threshold <= 50) return 'Likely Forged';
+		if (index > 45 && index <= 70 && threshold > 50) return 'Possibly Authentic';
+		if (index > 70 && threshold > 60) return 'Highly Authentic';
+		return 'Unknown Status';
+	}
+
+	const getResultIfExist = async () => {
+		try {
+			const { data, error } = await supabase.from("results").select("*").eq("signature_id", id);
+
+			if(error) {
+				Alert.alert("Error retrieving results");
+				return;
+			}
+
+			setResult({
+				index: data![0].similarity_index,
+				threshold: data![0].threshold,
+				date: data![0].date_created
+			})
+		} catch(err) {
+			console.error(err)
+		}
+	}
 
 	const getSignature = async () => {
 		console.log(id);
@@ -112,6 +203,7 @@ const RootLayout = () => {
 
 	useEffect(() => {
 		getSignature();
+		getResultIfExist();
 	}, []);
 
 	return (
@@ -152,6 +244,20 @@ const RootLayout = () => {
 				</Text>
 				{isAnalyzing && <LoadingDots />}
 			</TouchableOpacity>
+
+			{result && (
+				<View className='w-full flex-1 items-center place-items-center'>
+					<DonutChart index={result.index as unknown as number} threshold={result.threshold as unknown as number} />
+					<View className='flex flex-row justify-center items-center'>
+						<Text>Threshold Value: </Text>
+						<Text className='text-lg font-bold'>{result.threshold}</Text>
+					</View>
+					<View className='flex flex-row justify-center items-center'>
+						<Text>Label: </Text>
+						<Text className='text-lg font-bold'>{labelIdentifier(result.index as unknown as number, result.threshold as unknown as number)}</Text>
+					</View>
+				</View>
+			)}
 		</SafeAreaView>
 	);
 };

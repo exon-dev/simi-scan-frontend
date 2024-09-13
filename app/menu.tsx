@@ -140,9 +140,10 @@ const MenuView = () => {
 		if (!session.access_token) {
 			router.push("/(auth)/signin");
 		}
-
+		
 		getSignatures();
 	}, []);
+
 	return (
 		<SafeAreaView className='flex-1 bg-white'>
 			<View className='flex-row justify-between items-center px-4 py-5'>
