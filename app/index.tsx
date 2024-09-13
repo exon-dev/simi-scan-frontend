@@ -16,17 +16,17 @@ const LandingPage = () => {
 			<View style={styles.imgContainer}>
 				<Image
 					style={styles.cellPhone}
-					contentFit="contain"
+					contentFit='contain'
 					source={require("../assets/images/extras/cellphone.png")}
 				/>
 				<Image
 					style={styles.eye}
-					contentFit="contain"
+					contentFit='contain'
 					source={require("../assets/images/extras/eye.png")}
 				/>
 				<Image
 					style={styles.lock}
-					contentFit="contain"
+					contentFit='contain'
 					source={require("../assets/images/extras/lock.png")}
 				/>
 			</View>
@@ -34,13 +34,13 @@ const LandingPage = () => {
 			<View style={styles.headerContainer}>
 				<Text style={styles.headerText}>
 					Simi<Text style={styles.spanText}>Scan</Text> {"\n"}
-					<Text style={styles.spanText2}>
-						Authenticate with Confidence:
-					</Text>{" "}
-					AI-{"\n"}Powered Signature Matching
+					<Text style={styles.spanText2}>Authenticate with Confidence:</Text>{" "}
+					AI-Powered Signature Matching
 				</Text>
 
-				<TouchableOpacity style={styles.button} onPress={handlePress}>
+				<TouchableOpacity
+					style={styles.button}
+					onPress={handlePress}>
 					<Text style={styles.buttonText}>Get Started</Text>
 				</TouchableOpacity>
 			</View>

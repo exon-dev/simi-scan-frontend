@@ -1,5 +1,5 @@
-import React from "react";
-import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { Text, View, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -7,23 +7,71 @@ import {
 	TextInput,
 	GestureHandlerRootView,
 } from "react-native-gesture-handler";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import supabase from "../../lib/supabase";
+import { useSessionStore } from "@/store/session";
 
 const Signin = () => {
 	const router = useRouter();
-	const [email, setEmail] = React.useState("");
-	const [password, setPassword] = React.useState("");
+	const [alert, setAlert] = useState<{
+		type: "success" | "error" | "warning" | "info";
+		message: string;
+	} | null>(null);
 
-	const handleLogin = () => {
-		// Handle login logic here
-		console.log("Email:", email);
-		console.log("Password:", password);
-		router.push("/");
-	};
+	//@ts-ignore
+	const { session, setSession } = useSessionStore();
+
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [loading, setLoading] = useState(false);
+
+	async function handleLogin() {
+		setLoading(true);
+
+		if (!email || !password) {
+			Alert.alert("Please input all fields!");
+			return;
+		}
+
+		const { data, error } = await supabase.auth.signInWithPassword({
+			email: email,
+			password: password,
+		});
+
+		if (error) {
+			setLoading(false);
+			setAlert({ type: "error", message: error.message });
+			Alert.alert("Error", error.message);
+			console.log(error.message);
+		} else {
+			// showAlert("Login successful", "success");
+			const { data: user } = await supabase
+				.from("users")
+				.select("name")
+				.eq("email", data.user.email);
+
+			setSession({
+				id: data.user.id,
+				//@ts-ignore
+				name: user![0].name,
+				email: data.user.email,
+				role: data.user.role,
+				access_token: data.session.access_token,
+				expiration: data.session.expires_at,
+			});
+
+			if (Object.keys(session) !== null) {
+				router.push("/menu");
+			}
+			return;
+			setAlert({ type: "success", message: "Login successful" });
+		}
+	}
 
 	const toRegister = () => {
-		router.push("/signup");
+		//@ts-ignore
+		router.push("/(auth)/signup");
 	};
-
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<SafeAreaView style={styles.container}>
@@ -31,38 +79,44 @@ const Signin = () => {
 					<Image
 						style={styles.cellPhone2}
 						source={require("../../assets/images/extras/cellphone2.png")}
-						contentFit="contain"
+						contentFit='contain'
 					/>
 					<Image
 						style={styles.shape}
 						source={require("../../assets/images/extras/Shapes.png")}
-						contentFit="contain"
+						contentFit='contain'
 					/>
 				</View>
 
 				<View style={styles.formContainer}>
 					<Text style={styles.headerText}>Welcome!</Text>
+					<Text style={styles.title}>Email Address</Text>
 					<TextInput
 						style={styles.input}
-						placeholder="Email"
+						placeholder='Email'
 						value={email}
 						onChangeText={setEmail}
-						keyboardType="email-address"
-						autoCapitalize="none"
+						keyboardType='email-address'
+						autoCapitalize='none'
 					/>
+					<Text style={styles.title}>Password</Text>
+
 					<TextInput
 						style={styles.input}
-						placeholder="Password"
+						placeholder='Password'
 						value={password}
 						onChangeText={setPassword}
 						secureTextEntry
 					/>
-					<TouchableOpacity style={styles.button} onPress={handleLogin}>
+					<TouchableOpacity
+						style={styles.button}
+						onPress={handleLogin}>
 						<Text style={styles.buttonText}>Login</Text>
 					</TouchableOpacity>
-					<Text style={styles.toRegister} onPress={toRegister}>
-						Don't have an account?{" "}
-						<Text style={styles.toRegisterLink}>Register</Text>
+					<Text
+						style={styles.toRegister}
+						onPress={toRegister}>
+						Don't have an account? <Text style={styles.toRegisterLink}>Register</Text>
 					</Text>
 				</View>
 			</SafeAreaView>
@@ -81,6 +135,10 @@ const styles = StyleSheet.create({
 		fontFamily: "Poppins",
 	},
 
+	title: {
+		fontSize: 15,
+		fontWeight: "bold",
+	},
 	headerImg: {
 		width: "100%",
 		justifyContent: "center",
