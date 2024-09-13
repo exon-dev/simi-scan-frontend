@@ -1,4 +1,4 @@
-import { SetStateAction, useState, useEffect, useRef } from "react";
+import { SetStateAction, useState, useEffect, useRef, Dispatch } from "react";
 import {
 	View,
 	Text,
@@ -7,15 +7,19 @@ import {
 	Button,
 	Image,
 	StyleSheet,
+	Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { CameraView, CameraType, FlashMode, CameraMode } from "expo-camera";
+import * as FileSystem from "expo-file-system";
 import { useRouter } from "expo-router";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import LoadingDots from "@/components/extras/loading";
 import React from "react";
+import supabase from "@/lib/supabase";
+import { useSessionStore } from "@/store/session";
 
 // CaptureSignature Component
 interface CaptureSignatureProps {
@@ -56,20 +60,14 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 	};
 
 	return (
-		<View
-			style={[styles.container, { backgroundColor: "lightgrey" }]}
-			className='relative'>
+		<View style={styles.cameraContainer}>
 			<CameraView
 				ref={cameraRef}
-				style={[styles.camera, { borderColor: "red", borderWidth: 2 }]}
+				style={[styles.camera]}
 				facing={cameraFacing}
 				mode={cameraMode}
 				flash={cameraFlash}>
 				<View style={styles.buttonContainer}>
-					<Button
-						title='Flip Camera'
-						onPress={toggleCameraFacing}
-					/>
 					<Button
 						title={cameraMode === "picture" ? "Take Picture" : "Record Video"}
 						onPress={handleTakePicture}
@@ -80,8 +78,11 @@ function CaptureSignature({ onImageCaptured }: CaptureSignatureProps) {
 	);
 }
 
-// InputComponent for Title and Author
-function InputComponent() {
+interface InputProps {
+	stateInput: Dispatch<SetStateAction<string>>;
+}
+
+function InputComponent({ stateInput }: InputProps) {
 	const [isFocused, setIsFocused] = useState(false);
 
 	return (
@@ -97,6 +98,7 @@ function InputComponent() {
 				onFocus={() => setIsFocused(true)}
 				onBlur={() => setIsFocused(false)}
 				placeholder='Type here...'
+				onChangeText={stateInput}
 			/>
 		</View>
 	);
@@ -104,25 +106,79 @@ function InputComponent() {
 
 // Main InfoScreen Component
 export default function InfoScreen() {
-	const [imageUri, setImageUri] = useState<string | null>(null);
+	//@ts-ignore
+	const { session } = useSessionStore();
+	const [title, setTitle] = useState("");
+	const [author, setAuthor] = useState("");
+	const [firstImageUri, setFirstImageUri] = useState<string | null>(null);
+	const [secondImageUri, setSecondImageUri] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isCapturing, setIsCapturing] = useState(false);
+	const [isCapturingTwo, setIsCapturingTwo] = useState(false);
 	const router = useRouter();
 
-	const handleSaving = () => {
+	const handleSaving = async () => {
+		if (!title || !author || !firstImageUri || !secondImageUri) {
+			Alert.alert("Please provide all data needed");
+			return;
+		}
+
 		setIsSaving(true);
-		setTimeout(() => {
-			setIsSaving(false);
-			router.push("/analyze");
-		}, 3000);
+		try {
+			const firstImageBase64 = await FileSystem.readAsStringAsync(firstImageUri, {
+				encoding: FileSystem.EncodingType.Base64,
+			});
+
+			const secondImageBase64 = await FileSystem.readAsStringAsync(
+				secondImageUri,
+				{
+					encoding: FileSystem.EncodingType.Base64,
+				}
+			);
+
+			const { data, error } = await supabase
+				.from("signature_infos")
+				.insert({
+					user_id: session.id,
+					title: title,
+					author: author,
+					original_signature_url: firstImageBase64,
+					scanned_signature_url: secondImageBase64,
+				})
+				.select("signature_id");
+
+			if (error) {
+				Alert.alert(
+					"Error saving signature information to database. Please try again."
+				);
+				return;
+			}
+
+			Alert.alert("Signature information successfully saved!");
+
+			setTimeout(() => {
+				router.push(`/analyze/${data[0].signature_id}`);
+			}, 1500);
+
+			return;
+		} catch (err) {
+			console.error(err);
+			Alert.alert("Error saving signature details. Pleas try again");
+			return;
+		}
 	};
 
-	const handleImageCaptured = (uri: string) => {
-		setImageUri(uri);
+	const handleFirstImageCapture = (uri: string) => {
+		setFirstImageUri(uri);
 		setIsCapturing(false);
 	};
 
-	const handleUploadImage = async () => {
+	const handleSecondImageCapture = (uri: string) => {
+		setSecondImageUri(uri);
+		setIsCapturingTwo(false);
+	};
+
+	const handleUploadImage = async (pos: number) => {
 		const result = await ImagePicker.launchImageLibraryAsync({
 			mediaTypes: ImagePicker.MediaTypeOptions.Images,
 			allowsEditing: true,
@@ -130,9 +186,10 @@ export default function InfoScreen() {
 			quality: 1,
 		});
 
-		if (!result.canceled) {
-			setImageUri(result.assets[0].uri);
-		}
+		if (!result.canceled)
+			pos == 1
+				? setFirstImageUri(result.assets[0].uri)
+				: setSecondImageUri(result.assets[0].uri);
 	};
 
 	return (
@@ -170,13 +227,13 @@ export default function InfoScreen() {
 					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
 						Title
 					</Text>
-					<InputComponent />
+					<InputComponent stateInput={setTitle} />
 				</View>
 				<View style={{ gap: 5 }}>
 					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
 						Author
 					</Text>
-					<InputComponent />
+					<InputComponent stateInput={setAuthor} />
 				</View>
 
 				{/* Original Signature upload */}
@@ -184,8 +241,20 @@ export default function InfoScreen() {
 					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
 						Original Signature
 					</Text>
+					{firstImageUri ? (
+						<Image
+							src={firstImageUri}
+							resizeMode='contain'
+							style={{
+								width: "100%",
+								height: 100,
+							}}
+						/>
+					) : (
+						<View className='h-24'></View>
+					)}
 					{isCapturing ? (
-						<CaptureSignature onImageCaptured={handleImageCaptured} />
+						<CaptureSignature onImageCaptured={handleFirstImageCapture} />
 					) : (
 						<View style={{ flexDirection: "row", justifyContent: "space-between" }}>
 							<TouchableOpacity
@@ -216,7 +285,68 @@ export default function InfoScreen() {
 									borderRadius: 10,
 									padding: 10,
 								}}
-								onPress={handleUploadImage}>
+								onPress={() => handleUploadImage(1)}>
+								<FontAwesome5
+									name='file-image'
+									size={20}
+									color='#9E9E9E'
+								/>
+								<Text style={{ color: "#666", marginLeft: 5 }}>Upload Signature</Text>
+							</TouchableOpacity>
+						</View>
+					)}
+				</View>
+
+				{/* Scanned signature */}
+				<View style={{ gap: 10 }}>
+					<Text style={{ fontSize: 18, fontWeight: "600", color: "#333" }}>
+						Scanned Signature Copy
+					</Text>
+					{secondImageUri ? (
+						<Image
+							src={secondImageUri}
+							resizeMode='contain'
+							style={{
+								width: "100%",
+								height: 100,
+							}}
+						/>
+					) : (
+						<View className='h-24'></View>
+					)}
+					{isCapturingTwo ? (
+						<CaptureSignature onImageCaptured={handleSecondImageCapture} />
+					) : (
+						<View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+							<TouchableOpacity
+								style={{
+									flex: 1,
+									flexDirection: "row",
+									alignItems: "center",
+									justifyContent: "center",
+									backgroundColor: "#ccc",
+									borderRadius: 10,
+									padding: 10,
+								}}
+								onPress={() => setIsCapturingTwo(true)}>
+								<SimpleLineIcons
+									name='camera'
+									size={20}
+									color='#9E9E9E'
+								/>
+								<Text style={{ color: "#666", marginLeft: 5 }}>Take a photo</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={{
+									flex: 1,
+									flexDirection: "row",
+									alignItems: "center",
+									justifyContent: "center",
+									backgroundColor: "#ccc",
+									borderRadius: 10,
+									padding: 10,
+								}}
+								onPress={() => handleUploadImage(2)}>
 								<FontAwesome5
 									name='file-image'
 									size={20}
@@ -247,7 +377,7 @@ export default function InfoScreen() {
 						<LoadingDots />
 					) : (
 						<Text style={{ color: "white", fontWeight: "600", fontSize: 18 }}>
-							Analyze Signature
+							Save Signature
 						</Text>
 					)}
 				</TouchableOpacity>
@@ -257,15 +387,16 @@ export default function InfoScreen() {
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
+	cameraContainer: {
+		...StyleSheet.absoluteFillObject,
 		justifyContent: "center",
 		alignItems: "center",
+		zIndex: 1,
+		top: 40,
 	},
 	camera: {
-		flex: 1,
-		width: "100%",
-		height: "100%",
+		width: 300,
+		height: 120,
 	},
 	buttonContainer: {
 		position: "absolute",
@@ -275,5 +406,6 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "center",
 		alignItems: "center",
+		color: "#FFF",
 	},
 });

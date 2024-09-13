@@ -67,7 +67,6 @@ const Signup = () => {
 				Alert.alert(error.message);
 				return;
 			}
-			localStorage.setItem("is_register", "true");
 			router.push("/(auth)/verification");
 		}
 

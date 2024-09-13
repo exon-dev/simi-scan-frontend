@@ -9,6 +9,7 @@ import {
 	Image,
 	Alert,
 	TouchableOpacity,
+	Button,
 } from "react-native";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -18,10 +19,68 @@ import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 import supabase from "@/lib/supabase";
 import { useSessionStore } from "@/store/session";
+import { useSignatureStore } from "@/store/signatures";
+import { SignatureInfoProps } from "@/types/global";
+
+const convertBase64ToImageSource = (base64String: string) => {
+	return `data:image/png;base64,${base64String}`;
+};
+
+const Item = ({
+	signature_id,
+	title,
+	author,
+	original_signature_url,
+	scanned_signature_url,
+	created_at,
+}: SignatureInfoProps) => {
+	const imageSource = convertBase64ToImageSource(original_signature_url);
+
+	return (
+		<View className='flex mt-4'>
+			<View className='flex-row justify-between items-center px-4 border-b border-zinc-300 pb-2'>
+				<View className='flex-row gap-3'>
+					<Image
+						source={{ uri: imageSource }}
+						style={{ width: 80, height: 50 }}
+					/>
+					<View className='flex-col items-start'>
+						<Text className='text-md font-bold'>{title}</Text>
+						<Text className='text-sm'>{author}</Text>
+						<Text className='text-[10px]'>
+							{new Date(created_at).toLocaleDateString("en-US", {
+								year: "numeric",
+								month: "long",
+								day: "2-digit",
+								hour: "2-digit",
+								minute: "2-digit",
+							})}
+						</Text>
+					</View>
+				</View>
+				<TouchableWithoutFeedback
+					onPress={() => {
+						router.push(`/analyze/${signature_id}`);
+					}}>
+					<Text
+						style={{
+							borderRadius: 100,
+						}}
+						className='bg-prim text-sm px-2 py-1 font-semibold text-white'>
+						Open
+					</Text>
+				</TouchableWithoutFeedback>
+			</View>
+		</View>
+	);
+};
 
 const MenuView = () => {
 	//@ts-ignore
+	const { signatures, setSignatures } = useSignatureStore();
+	//@ts-ignore
 	const { session, setSession } = useSessionStore();
+
 	const handleLogout = async () => {
 		try {
 			Alert.alert(
@@ -45,7 +104,7 @@ const MenuView = () => {
 									Alert.alert("Error logging out. Please try again in a moment.");
 									return;
 								}
-
+								setSignatures([]);
 								setSession({});
 							} catch (err) {
 								console.error(err);
@@ -66,23 +125,23 @@ const MenuView = () => {
 	};
 
 	const getSignatures = async () => {
-		try {
-			const { data } = await supabase
-				.from("signature_infos")
-				.select("*")
-				.eq("user_id", session.id);
+		const { data, error } = await supabase
+			.from("signature_infos")
+			.select("*")
+			.eq("user_id", session.id);
 
-			console.log(data);
-		} catch (err) {
-			Alert.alert("Error getting signatures");
-			return;
+		if (error) {
+			console.error(error);
 		}
+		setSignatures(data || []);
 	};
 
 	useEffect(() => {
 		if (!session.access_token) {
 			router.push("/(auth)/signin");
 		}
+
+		getSignatures();
 	}, []);
 	return (
 		<SafeAreaView className='flex-1 bg-white'>
@@ -126,6 +185,23 @@ const MenuView = () => {
 					color='black'
 				/>
 			</View>
+
+			{/* Map the scanned signatures using flatlist*/}
+			<FlatList
+				className='mt-4'
+				data={signatures}
+				renderItem={({ item }) => (
+					<Item
+						signature_id={item.signature_id}
+						title={item.title}
+						author={item.author}
+						original_signature_url={item.original_signature_url}
+						scanned_signature_url={item.scanned_signature_url}
+						created_at={item.created_at}
+					/>
+				)}
+				keyExtractor={(item) => item.signature_id.toString()}
+			/>
 			<View className='absolute bottom-0 w-full bg-prim rounded-t-2xl p-4 flex-row justify-center items-center'>
 				<TouchableOpacity
 					onPress={navigateToInfo}
