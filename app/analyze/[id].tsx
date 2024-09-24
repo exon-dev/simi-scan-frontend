@@ -7,61 +7,69 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import supabase from "@/lib/supabase";
 import { SignatureInfoProps } from "@/types/global";
 import { useSessionStore } from "@/store/session";
-import { Svg, Circle } from 'react-native-svg';
+import { Svg, Circle } from "react-native-svg";
+import * as FileSystem from "expo-file-system";
 
 const convertBase64ToImageSource = (base64String: string) => {
 	return `data:image/png;base64,${base64String}`;
 };
 
-
-const  DonutChart = ({ index, threshold }: { index: number; threshold: number }) => {
-	const radius = 80; 
-	const strokeWidth = 15; 
+const DonutChart = ({
+	index,
+	threshold,
+}: {
+	index: number;
+	threshold: number;
+}) => {
+	const radius = 80;
+	const strokeWidth = 15;
 	const normalizedRadius = radius - strokeWidth / 2;
 	const circumference = normalizedRadius * 2 * Math.PI;
 	const strokeDashoffset = circumference - (index / 100) * circumference;
 
-  const dynamicColor = (index: number, threshold: number): string => {
-    if (index <= 45 && threshold <= 50) return 'red';
-    if (index > 45 && index <= 65 && threshold <= 50) return 'orange';
-    if (index > 45 && index <= 75 && threshold > 50) return 'yellow';
-    if (index > 75 && threshold > 60) return 'green';
-    return 'gray';
-  };
+	const dynamicColor = (index: number, threshold: number): string => {
+		if (index <= 45 && threshold <= 50) return "red";
+		if (index > 45 && index <= 65 && threshold <= 50) return "orange";
+		if (index > 45 && index <= 75 && threshold > 50) return "yellow";
+		if (index > 75 && threshold > 60) return "green";
+		return "gray";
+	};
 
-  const chartColor = dynamicColor(index, threshold);
+	const chartColor = dynamicColor(index, threshold);
 
-  return (
-			<View className="relative flex items-center justify-center w-[250px] h-[250px]">
-			<Svg height={radius * 2} width={radius * 2}>
-					<Circle
-							stroke="#000"
-							fill="none"
-							cx={radius}
-							cy={radius}
-							r={normalizedRadius}
-							strokeWidth={strokeWidth}
-					/>
-					<Circle
-							stroke={chartColor}
-							fill="none"
-							cx={radius}
-							cy={radius}
-							r={normalizedRadius}
-							strokeWidth={strokeWidth}
-							strokeDasharray={`${circumference} ${circumference}`}
-							strokeDashoffset={strokeDashoffset}
-							strokeLinecap="round"
-					/>
+	return (
+		<View className='relative flex items-center justify-center w-[250px] h-[250px]'>
+			<Svg
+				height={radius * 2}
+				width={radius * 2}>
+				<Circle
+					stroke='#000'
+					fill='none'
+					cx={radius}
+					cy={radius}
+					r={normalizedRadius}
+					strokeWidth={strokeWidth}
+				/>
+				<Circle
+					stroke={chartColor}
+					fill='none'
+					cx={radius}
+					cy={radius}
+					r={normalizedRadius}
+					strokeWidth={strokeWidth}
+					strokeDasharray={`${circumference} ${circumference}`}
+					strokeDashoffset={strokeDashoffset}
+					strokeLinecap='round'
+				/>
 			</Svg>
-			<View className="absolute inset-0 flex items-center justify-center">
-					<Text className={`text-3xl font-bold text-${chartColor}-500`}>
-							{index}%
-					</Text>
-					<Text className="font-semibold text-xs">Similarity Index</Text>
+			<View className='absolute inset-0 flex items-center justify-center'>
+				<Text className={`text-3xl font-bold text-${chartColor}-500`}>
+					{index}%
+				</Text>
+				<Text className='font-semibold text-xs'>Similarity Index</Text>
 			</View>
-	</View>
-  );
+		</View>
+	);
 };
 
 const RootLayout = () => {
@@ -80,14 +88,22 @@ const RootLayout = () => {
 	const [result, setResult] = useState({
 		index: null,
 		threshold: null,
-		date: ""
-	})
+		date: "",
+	});
 
 	const handlePress = async () => {
 		setIsAnalyzing(true);
 
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+
 		try {
-			const response = await fetch(`http://192.168.1.7:5000/scan`, {
+			// change this url host sa inyo ipaddress, ayaw na ichange ang :5000/scan
+			// make sure na ang ip address kay gikan sa Wireless LAN adapter Wi-Fi: ipv4 address
+			// match this sa inyo server
+			const url = `http://192.168.1.14:5000/scan`;
+
+			const response = await fetch(url, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -97,45 +113,46 @@ const RootLayout = () => {
 					original_signature: data.original_signature_url,
 					scanned_signature: data.scanned_signature_url,
 				}),
+				signal: controller.signal,
 			});
 
+			clearTimeout(timeoutId);
+
 			if (!response.ok) {
+				console.log(response);
 				throw new Error(`HTTP error! Status: ${response.status}`);
 			}
 
 			const result = await response.json();
-			
+
 			setResult({
 				index: result.similarity_idx,
 				threshold: result.threshold_val,
-				date: result.date
-			})
+				date: result.date,
+			});
 
 			const { error } = await supabase.from("results").insert({
 				similarity_index: result.similarity_idx,
 				threshold: result.threshold_val,
 				date_created: result.date,
-				signature_id: id
-			})
+				signature_id: id,
+			});
 
-			if(error) {
-				console.error(error)
+			if (error) {
+				console.error(error);
 				return;
 			}
-
 		} catch (err) {
+			//@ts-ignore
+			Alert.alert("Network request failed:", err.message);
 			//@ts-ignore
 			console.error("Network request failed:", err.message);
 			//@ts-ignore
 
-			if (err.response) {
-				//@ts-ignore
-				console.error("Error Response:", err.response);
-			}
-			//@ts-ignore
-			if (err.stack) {
-				//@ts-ignore
-				console.error("Error Stack:", err.stack);
+			if (err.name === "AbortError") {
+				console.error("Request timed out");
+			} else {
+				console.error("Fetch error:", err);
 			}
 		} finally {
 			setIsAnalyzing(false);
@@ -143,31 +160,38 @@ const RootLayout = () => {
 	};
 
 	const labelIdentifier = (index: number, threshold: number): string => {
-		if (index <= 45 && threshold <= 50) return 'Highly Likely Forged!';
-		if (index > 45 && index <= 65 && threshold <= 50) return 'Likely Forged';
-		if (index > 45 && index <= 70 && threshold > 50) return 'Possibly Authentic';
-		if (index > 70 && threshold > 60) return 'Highly Authentic';
-		return 'Unknown Status';
-	}
+		if (index <= 45 && threshold <= 50) return "Highly Likely Forged!";
+		if (index > 45 && index <= 65 && threshold <= 50) return "Likely Forged";
+		if (index > 45 && index <= 70 && threshold > 50) return "Possibly Authentic";
+		if (index > 70 && threshold > 60) return "Highly Authentic";
+		return "Unknown Status";
+	};
 
 	const getResultIfExist = async () => {
 		try {
-			const { data, error } = await supabase.from("results").select("*").eq("signature_id", id);
+			const { data, error } = await supabase
+				.from("results")
+				.select("*")
+				.eq("signature_id", id);
 
-			if(error) {
+			if (error) {
 				Alert.alert("Error retrieving results");
 				return;
 			}
 
-			setResult({
-				index: data![0].similarity_index,
-				threshold: data![0].threshold,
-				date: data![0].date_created
-			})
-		} catch(err) {
-			console.error(err)
+			if (data && data.length > 0) {
+				setResult({
+					index: data[0].similarity_index,
+					threshold: data[0].threshold,
+					date: data[0].date_created,
+				});
+			} else {
+				console.log("No results found for the given signature_id");
+			}
+		} catch (err) {
+			console.error(err);
 		}
-	}
+	};
 
 	const getSignature = async () => {
 		console.log(id);
@@ -247,14 +271,22 @@ const RootLayout = () => {
 
 			{result && (
 				<View className='w-full flex-1 items-center place-items-center'>
-					<DonutChart index={result.index as unknown as number} threshold={result.threshold as unknown as number} />
+					<DonutChart
+						index={result.index as unknown as number}
+						threshold={result.threshold as unknown as number}
+					/>
 					<View className='flex flex-row justify-center items-center'>
 						<Text>Threshold Value: </Text>
 						<Text className='text-lg font-bold'>{result.threshold}</Text>
 					</View>
 					<View className='flex flex-row justify-center items-center'>
 						<Text>Label: </Text>
-						<Text className='text-lg font-bold'>{labelIdentifier(result.index as unknown as number, result.threshold as unknown as number)}</Text>
+						<Text className='text-lg font-bold'>
+							{labelIdentifier(
+								result.index as unknown as number,
+								result.threshold as unknown as number
+							)}
+						</Text>
 					</View>
 				</View>
 			)}
