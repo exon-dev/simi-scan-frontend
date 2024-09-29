@@ -11,7 +11,7 @@ import {
 	TouchableOpacity,
 	Button,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useEffect, useState } from "react";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -33,6 +33,7 @@ const Item = ({
 	original_signature_url,
 	scanned_signature_url,
 	created_at,
+	handleDeleteSignature,
 }: SignatureInfoProps) => {
 	const imageSource = convertBase64ToImageSource(original_signature_url);
 
@@ -69,6 +70,12 @@ const Item = ({
 						className='bg-prim text-sm px-2 py-1 font-semibold text-white'>
 						Open
 					</Text>
+				</TouchableWithoutFeedback>
+				<TouchableWithoutFeedback
+					onPress={() => {
+						handleDeleteSignature(signature_id);
+					}}>
+					<Text>Delete</Text>
 				</TouchableWithoutFeedback>
 			</View>
 		</View>
@@ -136,13 +143,57 @@ const MenuView = () => {
 		setSignatures(data || []);
 	};
 
+	const handleDeleteSignature = async (signature_id: number) => {
+		try {
+			Alert.alert(
+				"Confirmation",
+				"Are you sure you want to delete this signature?",
+				[
+					{
+						text: "Cancel",
+						onPress: () => {
+							return;
+						},
+						style: "cancel",
+					},
+					{
+						text: "Delete",
+						onPress: async () => {
+							const { error } = await supabase
+								.from("signature_infos")
+								.delete()
+								.eq("signature_id", signature_id);
+
+							if (error) {
+								console.error(error);
+								Alert.alert("Error deleting signature. Please try again in a moment.");
+								return;
+							}
+							getSignatures();
+						},
+					},
+				],
+				{ cancelable: false }
+			);
+		} catch (err) {
+			console.log(err);
+			Alert.alert("Error deleting signature. Please try again in a moment.");
+		}
+	};
+
 	useEffect(() => {
 		if (!session.access_token) {
 			router.push("/(auth)/signin");
 		}
-		
+
 		getSignatures();
-	}, []);
+	}, [session]);
+
+	useFocusEffect(
+		React.useCallback(() => {
+			getSignatures();
+		}, [])
+	);
 
 	return (
 		<SafeAreaView className='flex-1 bg-white'>
@@ -199,6 +250,7 @@ const MenuView = () => {
 						original_signature_url={item.original_signature_url}
 						scanned_signature_url={item.scanned_signature_url}
 						created_at={item.created_at}
+						handleDeleteSignature={handleDeleteSignature}
 					/>
 				)}
 				keyExtractor={(item) => item.signature_id.toString()}

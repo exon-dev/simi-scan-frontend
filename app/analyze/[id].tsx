@@ -28,10 +28,10 @@ const DonutChart = ({
 	const strokeDashoffset = circumference - (index / 100) * circumference;
 
 	const dynamicColor = (index: number, threshold: number): string => {
-		if (index <= 45 && threshold <= 50) return "red";
-		if (index > 45 && index <= 65 && threshold <= 50) return "orange";
-		if (index > 45 && index <= 75 && threshold > 50) return "yellow";
-		if (index > 75 && threshold > 60) return "green";
+		if (index <= 45) return "red";
+		if (index > 45 && index <= 65) return "orange";
+		if (index > 45 && index <= 75) return "yellow";
+		if (index > 75) return "green";
 		return "gray";
 	};
 
@@ -84,6 +84,7 @@ const RootLayout = () => {
 		created_at: "",
 		original_signature_url: "",
 		scanned_signature_url: "",
+		handleDeleteSignature: () => {},
 	});
 	const [result, setResult] = useState({
 		index: null,
@@ -101,7 +102,7 @@ const RootLayout = () => {
 			// change this url host sa inyo ipaddress, ayaw na ichange ang :5000/scan
 			// make sure na ang ip address kay gikan sa Wireless LAN adapter Wi-Fi: ipv4 address
 			// match this sa inyo server
-			const url = `http://192.168.1.14:5000/scan`;
+			const url = `http://192.168.1.7:5000/scan`;
 
 			const response = await fetch(url, {
 				method: "POST",
@@ -215,6 +216,7 @@ const RootLayout = () => {
 					original_signature_url: signatureData.original_signature_url || "",
 					scanned_signature_url: signatureData.scanned_signature_url || "",
 					created_at: signatureData.created_at || "",
+					handleDeleteSignature: () => {},
 				});
 			} else {
 				Alert.alert("No signature found");
@@ -269,7 +271,7 @@ const RootLayout = () => {
 				{isAnalyzing && <LoadingDots />}
 			</TouchableOpacity>
 
-			{result && (
+			{result.index !== null && (
 				<View className='w-full flex-1 items-center place-items-center'>
 					<DonutChart
 						index={result.index as unknown as number}
@@ -288,6 +290,40 @@ const RootLayout = () => {
 							)}
 						</Text>
 					</View>
+					<Text
+						style={{
+							borderRadius: 10,
+							shadowColor: "#000",
+							shadowOffset: {
+								width: 0,
+								height: 2,
+							},
+							shadowOpacity: 0.25,
+							shadowRadius: 3.84,
+							elevation: 5,
+							paddingHorizontal: 15,
+							paddingVertical: 10,
+							marginTop: 20,
+							width: "100%",
+							borderWidth: 1,
+							borderColor: "gray",
+							color: "black",
+							textAlign: "center",
+							fontWeight: "bold",
+							fontSize: 16,
+						}}>
+						{(result.index as unknown as number) <= 45
+							? "⚠️ Warning: The signature is highly likely to be forged. Please report this to the authorities."
+							: (result.index as unknown as number) > 45 &&
+								  (result.index as unknown as number) <= 65
+								? "⚠️ Caution: The signature is likely to be forged. Further verification is recommended."
+								: (result.index as unknown as number) > 65 &&
+									  (result.index as unknown as number) <= 75
+									? "⚠️ Notice: The signature is possibly authentic but requires further verification."
+									: (result.index as unknown as number) > 75
+										? "✅ Success: The signature is verified as original and authentic."
+										: "Unknown Status"}
+					</Text>
 				</View>
 			)}
 		</SafeAreaView>
