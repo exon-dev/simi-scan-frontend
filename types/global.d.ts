@@ -29,4 +29,5 @@ export interface SignatureInfoProps {
 	original_signature_url: string;
 	scanned_signature_url: string;
 	created_at: string;
+	handleDeleteSignature: (signature_id: number) => void;
 }
