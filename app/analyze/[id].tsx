@@ -14,20 +14,14 @@ const convertBase64ToImageSource = (base64String: string) => {
 	return `data:image/png;base64,${base64String}`;
 };
 
-const DonutChart = ({
-	index,
-	threshold,
-}: {
-	index: number;
-	threshold: number;
-}) => {
+const DonutChart = ({ index }: { index: number }) => {
 	const radius = 80;
 	const strokeWidth = 15;
 	const normalizedRadius = radius - strokeWidth / 2;
 	const circumference = normalizedRadius * 2 * Math.PI;
 	const strokeDashoffset = circumference - (index / 100) * circumference;
 
-	const dynamicColor = (index: number, threshold: number): string => {
+	const dynamicColor = (index: number): string => {
 		if (index <= 45) return "red";
 		if (index > 45 && index <= 65) return "orange";
 		if (index > 45 && index <= 75) return "yellow";
@@ -35,7 +29,7 @@ const DonutChart = ({
 		return "gray";
 	};
 
-	const chartColor = dynamicColor(index, threshold);
+	const chartColor = dynamicColor(index);
 
 	return (
 		<View className='relative flex items-center justify-center w-[250px] h-[250px]'>
@@ -88,7 +82,6 @@ const RootLayout = () => {
 	});
 	const [result, setResult] = useState({
 		index: null,
-		threshold: null,
 		date: "",
 	});
 
@@ -102,7 +95,7 @@ const RootLayout = () => {
 			// change this url host sa inyo ipaddress, ayaw na ichange ang :5000/scan
 			// make sure na ang ip address kay gikan sa Wireless LAN adapter Wi-Fi: ipv4 address
 			// match this sa inyo server
-			const url = `http://192.168.1.7:5000/scan`;
+			const url = `http://192.168.1.8:5000/scan`;
 
 			const response = await fetch(url, {
 				method: "POST",
@@ -128,13 +121,11 @@ const RootLayout = () => {
 
 			setResult({
 				index: result.similarity_idx,
-				threshold: result.threshold_val,
 				date: result.date,
 			});
 
 			const { error } = await supabase.from("results").insert({
 				similarity_index: result.similarity_idx,
-				threshold: result.threshold_val,
 				date_created: result.date,
 				signature_id: id,
 			});
@@ -160,11 +151,11 @@ const RootLayout = () => {
 		}
 	};
 
-	const labelIdentifier = (index: number, threshold: number): string => {
-		if (index <= 45 && threshold <= 50) return "Highly Likely Forged!";
-		if (index > 45 && index <= 65 && threshold <= 50) return "Likely Forged";
-		if (index > 45 && index <= 70 && threshold > 50) return "Possibly Authentic";
-		if (index > 70 && threshold > 60) return "Highly Authentic";
+	const labelIdentifier = (index: number): string => {
+		if (index <= 45) return "Highly Likely Forged!";
+		if (index > 45 && index <= 65) return "Likely Forged";
+		if (index > 45 && index <= 70) return "Possibly Authentic";
+		if (index > 70) return "Highly Authentic";
 		return "Unknown Status";
 	};
 
@@ -183,7 +174,6 @@ const RootLayout = () => {
 			if (data && data.length > 0) {
 				setResult({
 					index: data[0].similarity_index,
-					threshold: data[0].threshold,
 					date: data[0].date_created,
 				});
 			} else {
@@ -273,21 +263,11 @@ const RootLayout = () => {
 
 			{result.index !== null && (
 				<View className='w-full flex-1 items-center place-items-center'>
-					<DonutChart
-						index={result.index as unknown as number}
-						threshold={result.threshold as unknown as number}
-					/>
-					<View className='flex flex-row justify-center items-center'>
-						<Text>Threshold Value: </Text>
-						<Text className='text-lg font-bold'>{result.threshold}</Text>
-					</View>
+					<DonutChart index={result.index as unknown as number} />
 					<View className='flex flex-row justify-center items-center'>
 						<Text>Label: </Text>
 						<Text className='text-lg font-bold'>
-							{labelIdentifier(
-								result.index as unknown as number,
-								result.threshold as unknown as number
-							)}
+							{labelIdentifier(result.index as unknown as number)}
 						</Text>
 					</View>
 					<Text
